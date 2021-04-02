@@ -1,0 +1,23 @@
+{
+  "name": "kt_render",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akakyi/kt_render.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/akakyi/kt_render/issues"
+  },
+  "homepage": "https://github.com/akakyi/kt_render#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "kotlin": "^1.4.10"
+  }
+}

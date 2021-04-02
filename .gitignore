@@ -31,3 +31,7 @@ build/
 .vscode/
 
 out/
+
+.gradle/
+
+node_modules/
