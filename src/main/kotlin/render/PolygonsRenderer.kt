@@ -8,12 +8,14 @@ import kotlin.random.nextInt
 class PolygonsRenderer(
     private val canvas: Canvas,
     private val xMult: Double = 1.0,
-    private val yMult: Double = 1.0
+    private val yMult: Double = 1.0,
+    private val xShift: Double = .0,
+    private val yShift: Double = .0
 ) {
 
     companion object {
 
-        const val STEP = 0.1
+        const val STEP = 1
 
     }
 
@@ -24,13 +26,14 @@ class PolygonsRenderer(
     }
 
     private fun drawPoligon(poligon: Poligon) {
-        val triangleProection = poligon.triangle.proection2D.scale(xMult, yMult)
+        val triangleProection = poligon.triangle.proection2D.scale(xMult, yMult).shift(xShift, yShift)
         val focusArea = calcFocusArea(triangleProection)
         val leftBordX = focusArea.leftTop.x
         val rightBordX = focusArea.rightBottom.x
         val bottomBordY = focusArea.leftTop.y
         val topBordY = focusArea.rightBottom.y
 
+        console.log("drawing $triangleProection")
         generateSequence(
             seed = leftBordX,
             nextFunction = { if (it < rightBordX) it + STEP else null }
@@ -49,6 +52,7 @@ class PolygonsRenderer(
 
     private fun paintPixeInTriangle(point: Point, basis: Triangle) {
         val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis, point)
+//        console.log("Barycentric $barycentric for point $point")
         if (barycentric.lambdaFirst >= 0 && barycentric.lambdaSecond >= 0 && barycentric.lambdaThird >= 0) {
             canvas.drawPoint(
                 coord = PointColored(

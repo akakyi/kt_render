@@ -12,4 +12,10 @@ data class Triangle(
         vertThird = Point(vertThird.x * xCoefficient, vertThird.y * yCoefficient)
     )
 
+    fun shift(xShift: Double, yShift: Double) = Triangle(
+        vertFirst = Point(vertFirst.x + xShift, vertFirst.y + yShift),
+        vertSecond = Point(vertSecond.x + xShift, vertSecond.y + yShift),
+        vertThird = Point(vertThird.x + xShift, vertThird.y + yShift)
+    )
+
 }

@@ -14,12 +14,11 @@ class CanvasRenderingContext2DToCanvasAdapter(
         context.lineTo(finish.x, finish.y)
     }
 
-    override fun drawPoint(coord: PointColored) {
+    override fun drawPoint(coord: PointColored, pointSize: Double) {
         val color = coord.color
         context.fillStyle = "rgb(${color.redChannel}, ${color.greenChannel}, ${color.blueChannel})"
         val point = coord.point
-        context.moveTo(point.x, point.y)
-        context.lineTo(point.x, point.y)
+        context.fillRect(point.x, point.y, pointSize, pointSize)
     }
 
 }

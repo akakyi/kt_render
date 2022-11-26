@@ -8,6 +8,6 @@ interface Canvas {
 
     fun drawLine(start: Point, finish: Point, color: RGBAColor)
 
-    fun drawPoint(coord: PointColored)
+    fun drawPoint(coord: PointColored, pointSize: Double = 1.0)
 
 }

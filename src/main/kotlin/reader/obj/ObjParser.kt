@@ -33,9 +33,12 @@ class ObjParser(
                 POLIGON_LABEL -> parseTriangle(splitted, points)
                     .let { triangle ->
                         triangles.add(triangle.first)
+                        console.log("Triangle: ${triangle.first}")
                         val second = triangle.second
-                        if (second != null)
+                        if (second != null) {
                             triangles.add(second)
+                            console.log("Triangle: $second")
+                        }
                     }
             }
         }
