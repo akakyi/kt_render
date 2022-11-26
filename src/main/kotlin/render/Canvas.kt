@@ -1,11 +1,13 @@
 package render
 
 import dto.Point
+import dto.PointColored
+import dto.RGBAColor
 
 interface Canvas {
 
-    fun drawLine(start: Point, finish: Point)
+    fun drawLine(start: Point, finish: Point, color: RGBAColor)
 
-    fun drawPoint(coord: Point)
+    fun drawPoint(coord: PointColored)
 
 }

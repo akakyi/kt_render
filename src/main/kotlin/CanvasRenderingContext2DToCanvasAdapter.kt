@@ -1,19 +1,25 @@
 import dto.Point
+import dto.PointColored
+import dto.RGBAColor
 import org.w3c.dom.CanvasRenderingContext2D
 import render.Canvas
 
 class CanvasRenderingContext2DToCanvasAdapter(
-    private val canvas: CanvasRenderingContext2D
+    private val context: CanvasRenderingContext2D
 ) : Canvas {
 
-    override fun drawLine(start: Point, finish: Point) {
-        canvas.moveTo(start.x, start.y)
-        canvas.lineTo(finish.x, finish.y)
+    override fun drawLine(start: Point, finish: Point, color: RGBAColor) {
+        context.fillStyle = "rgb(${color.redChannel}, ${color.greenChannel}, ${color.blueChannel})"
+        context.moveTo(start.x, start.y)
+        context.lineTo(finish.x, finish.y)
     }
 
-    override fun drawPoint(coord: Point) {
-        canvas.moveTo(coord.x, coord.y)
-        canvas.lineTo(coord.x, coord.y)
+    override fun drawPoint(coord: PointColored) {
+        val color = coord.color
+        context.fillStyle = "rgb(${color.redChannel}, ${color.greenChannel}, ${color.blueChannel})"
+        val point = coord.point
+        context.moveTo(point.x, point.y)
+        context.lineTo(point.x, point.y)
     }
 
 }

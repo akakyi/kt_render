@@ -2,8 +2,8 @@ package reader.obj
 
 import dto.*
 
-class ObjReader(
-    //val path: String
+class ObjParser(
+    val linesProvider: ObjLinesProvider
 ) {
 
     companion object {
@@ -26,7 +26,7 @@ class ObjReader(
     fun parse(): List<Poligon> {
         val points = mutableListOf<Point3D>()
         val triangles = mutableListOf<Triangle3D>()
-        forEachLine {
+        linesProvider.forEachLine {
             val splitted = it.split(" ")
             when (splitted[0]) {
                 POINT_LABEL -> parsePoint(splitted).let { point -> points.add(point) }
@@ -71,11 +71,6 @@ class ObjReader(
         } else {
             first to null
         }
-    }
-
-    private fun forEachLine(handler: (line: String) -> Unit) {
-        //TODO STUB!
-        LINES.forEach { handler(it) }
     }
 
 }
