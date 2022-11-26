@@ -23,7 +23,7 @@ class ObjParser(
      * Не очень, но иф файл написан корректно, то проблем не возникнет.
      * @return Список полигонов.
      */
-    fun parse(): List<Poligon> {
+    fun parse(): List<Polygon> {
         val points = mutableListOf<Point3D>()
         val triangles = mutableListOf<Triangle3D>()
         linesProvider.forEachLine {
@@ -44,7 +44,7 @@ class ObjParser(
         }
 
         return triangles
-            .map { Poligon(it) }
+            .map { Polygon(it) }
     }
 
     private fun parsePoint(splittedLine: List<String>) = Point3D(

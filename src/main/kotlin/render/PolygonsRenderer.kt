@@ -19,21 +19,28 @@ class PolygonsRenderer(
 
     }
 
-    fun render(poligons: List<Poligon>) {
-        poligons.forEach {
+    fun render(polygons: List<Polygon>) {
+        polygons.forEach {
             drawPoligon(it)
         }
     }
 
-    private fun drawPoligon(poligon: Poligon) {
-        val triangleProection = poligon.triangle.proection2D.scale(xMult, yMult).shift(xShift, yShift)
+    private fun drawPoligon(polygon: Polygon) {
+        val triangleProection = polygon.triangle.proection2D.scale(xMult, yMult).shift(xShift, yShift)
+        val color = getColor()
+        console.log("drawing $triangleProection colored with $color")
+
+        if (canvas.canDrawTriangle(triangleProection, color)) {
+            canvas.drawTriangle(triangleProection, color)
+            return
+        }
+
         val focusArea = calcFocusArea(triangleProection)
         val leftBordX = focusArea.leftTop.x
         val rightBordX = focusArea.rightBottom.x
         val bottomBordY = focusArea.leftTop.y
         val topBordY = focusArea.rightBottom.y
 
-        console.log("drawing $triangleProection")
         generateSequence(
             seed = leftBordX,
             nextFunction = { if (it < rightBordX) it + STEP else null }
@@ -43,22 +50,20 @@ class PolygonsRenderer(
                 nextFunction = { if (it < topBordY) it + STEP else null }
             ).forEach { curY ->
                 paintPixeInTriangle(
-                    point = Point(curX, curY),
+                    point = PointColored(curX, curY, color),
                     basis = triangleProection
                 )
             }
         }
     }
 
-    private fun paintPixeInTriangle(point: Point, basis: Triangle) {
-        val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis, point)
+    //TODO доработать. Слева снизу всегда точки вместо треугольников!
+    private fun paintPixeInTriangle(point: PointColored, basis: Triangle) {
+        val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis, point.point)
 //        console.log("Barycentric $barycentric for point $point")
         if (barycentric.lambdaFirst >= 0 && barycentric.lambdaSecond >= 0 && barycentric.lambdaThird >= 0) {
             canvas.drawPoint(
-                coord = PointColored(
-                    point = point,
-                    color = getColor()
-                )
+                coord = point
             )
         }
     }

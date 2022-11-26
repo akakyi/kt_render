@@ -1,5 +1,5 @@
 package dto
 
-data class Poligon(
+data class Polygon(
     val triangle: Triangle3D
 )
