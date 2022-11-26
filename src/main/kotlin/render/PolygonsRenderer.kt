@@ -12,8 +12,12 @@ class PolygonsRenderer(
     private val zMult: Double = 1.0,
     private val xShift: Double = .0,
     private val yShift: Double = .0,
+    private val zShift: Double = .0,
     private val cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0 * zMult),
 ) {
+
+    //TODO разобраться с координатами реальными и эрканными. Даблы везде не есть хорошо
+    private val zBuffer = mutableMapOf<Pair<Int, Int>, Double>()
 
     companion object {
 
@@ -30,22 +34,16 @@ class PolygonsRenderer(
     }
 
     private fun drawPoligon(polygon: Polygon) {
-        val triangleScaled = polygon.triangle.scale(xMult, yMult, zMult).shift(xShift, yShift)
-        val triangleProection = triangleScaled.proection2D
+        val triangleScaled = polygon.triangle.scale(xMult, yMult, zMult).shift(xShift, yShift, zShift)
         val normalCos = getNormalCosinus(triangleScaled, cameraVector)
         if (normalCos < 0) {
             return
         }
 
         val color = getColor(normalCos)
-        console.log("drawing $triangleScaled colored with normal cos = $normalCos")
+        console.log("drawing $triangleScaled colored with $color")
 
-        if (canvas.canDrawTriangle(triangleProection, color)) {
-            canvas.drawTriangle(triangleProection, color)
-            return
-        }
-
-        val focusArea = calcFocusArea(triangleProection)
+        val focusArea = calcFocusArea(triangleScaled)
         val leftBordX = focusArea.leftTop.x
         val rightBordX = focusArea.rightBottom.x
         val bottomBordY = focusArea.leftTop.y
@@ -59,34 +57,40 @@ class PolygonsRenderer(
                 seed = bottomBordY,
                 nextFunction = { if (it < topBordY) it + STEP else null }
             ).forEach { curY ->
-                paintPixeInTriangle(
-                    point = PointColored(curX, curY, color),
-                    basis = triangleProection
+                paintPixelInTriangle(
+                    pointCol = PointColored(curX, curY, color),
+                    basis = triangleScaled
                 )
             }
         }
     }
 
-    //TODO доработать. Слева снизу всегда точки вместо треугольников!
-    private fun paintPixeInTriangle(point: PointColored, basis: Triangle) {
-        val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis, point.point)
+    private fun paintPixelInTriangle(pointCol: PointColored, basis: Triangle3D) {
+        val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, pointCol.point)
 //        console.log("Barycentric $barycentric for point $point")
         if (barycentric.lambdaFirst >= 0 && barycentric.lambdaSecond >= 0 && barycentric.lambdaThird >= 0) {
-            canvas.drawPoint(
-                coord = point
-            )
+            val zBufferKey = pointCol.point.x.toInt() to pointCol.point.y.toInt()
+            val currZBuffer = zBuffer[zBufferKey] ?: Double.POSITIVE_INFINITY
+            val currZ = barycentric.lambdaFirst * basis.vertFirst.z + barycentric.lambdaSecond * basis.vertSecond.z +
+                    barycentric.lambdaThird * basis.vertThird.z
+            if (currZ < currZBuffer) {
+                zBuffer[zBufferKey] = currZ
+                canvas.drawPoint(
+                    coord = pointCol
+                )
+            }
         }
     }
 
-    private fun calcFocusArea(triangle: Triangle): FocusArea {
+    private fun calcFocusArea(triangle: Triangle3D): FocusArea {
         val leftTopX = minOf(triangle.vertFirst.x, triangle.vertSecond.x, triangle.vertThird.x)
         val leftTopY = minOf(triangle.vertFirst.y, triangle.vertSecond.y, triangle.vertThird.y)
-        val rightTopX = maxOf(triangle.vertFirst.x, triangle.vertSecond.x, triangle.vertThird.x)
-        val rightTopY = maxOf(triangle.vertFirst.x, triangle.vertSecond.x, triangle.vertThird.x)
+        val rightDownX = maxOf(triangle.vertFirst.x, triangle.vertSecond.x, triangle.vertThird.x)
+        val rightDownY = maxOf(triangle.vertFirst.y, triangle.vertSecond.y, triangle.vertThird.y)
 
         return FocusArea(
             leftTop = Point(leftTopX, leftTopY),
-            rightBottom = Point(rightTopX, rightTopY)
+            rightBottom = Point(rightDownX, rightDownY)
         )
     }
 
@@ -104,7 +108,7 @@ class PolygonsRenderer(
         val nScalarWithCamera = n0 * cameraVector.x + n1 * cameraVector.y + n2 * cameraVector.z
         val normal = sqrt(n0.pow(2) + n1.pow(2) + n2.pow(2)) *
                 sqrt(cameraVector.x.pow(2) + cameraVector.y.pow(2) + cameraVector.z.pow(2))
-        return nScalarWithCamera / normal
+        return -nScalarWithCamera / normal
     }
 
     private data class FocusArea(
