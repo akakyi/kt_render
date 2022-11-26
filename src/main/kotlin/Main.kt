@@ -22,6 +22,7 @@ fun main() {
         canvas = CanvasRenderingContext2DToCanvasAdapter(ctx),
         xMult = 300.0,
         yMult = 300.0,
+        zMult = 300.0,
         xShift = 210.0,
         yShift = 210.0
     )
