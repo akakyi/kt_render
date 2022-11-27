@@ -5,6 +5,9 @@ import utils.BarycentricCalculator
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+// Матрицы моё слабое место. Я не понял ни-хре-на
+// (кроме того, что одно это матрица поворота и другое матрица смещения) и тупо переписал с хабра тот кусок -_-
+// для норм понимания почитать НЕ уставшим https://habr.com/ru/post/248611/
 class PolygonsRenderer(
     private val canvas: Canvas,
     private val xMult: Double = 1.0,
@@ -108,6 +111,7 @@ class PolygonsRenderer(
         val nScalarWithCamera = n0 * cameraVector.x + n1 * cameraVector.y + n2 * cameraVector.z
         val normal = sqrt(n0.pow(2) + n1.pow(2) + n2.pow(2)) *
                 sqrt(cameraVector.x.pow(2) + cameraVector.y.pow(2) + cameraVector.z.pow(2))
+        //TODO убрать костыль!
         return -nScalarWithCamera / normal
     }
 
