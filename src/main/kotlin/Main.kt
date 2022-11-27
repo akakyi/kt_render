@@ -1,5 +1,6 @@
 import dto.Point3D
 import dto.Polygon
+import dto.ThreeVector
 import dto.Triangle3D
 import kotlinx.browser.document
 import org.w3c.dom.CanvasRenderingContext2D
@@ -20,35 +21,35 @@ fun main() {
         xMult = 300.0,
         yMult = 300.0,
         zMult = 300.0,
-        xShift = 210.0,
-        yShift = 210.0,
-        zShift = 210.0
+        xShift = 300.0,
+        yShift = 300.0,
+        zShift = 300.0,
+        cameraVector = ThreeVector(.0, .0, -1000.0)
     )
 
     val objParser = ObjParser(ObjStubLinesProvider())
-    console.log("get rotated, idiot")
-    val polygons = objParser.parse().map { makeUpsideDown(it, Point3D(1.0, 1.0, 1.0)) }
+    val polygons = objParser.parse().map { makeUpsideDown(it) }
     polygonsRenderer.render(polygons)
-
 }
 
-private fun makeUpsideDown(polygon: Polygon, rightBottomBorder: Point3D): Polygon {
+private fun makeUpsideDown(polygon: Polygon): Polygon {
+    console.log("get rotated, idiot")
     val triangle = polygon.triangle
     val result = Triangle3D(
         vertFirst = Point3D(
-            x = rightBottomBorder.x - triangle.vertFirst.x,
-            y = rightBottomBorder.y - triangle.vertFirst.y,
-            z = rightBottomBorder.z - triangle.vertFirst.z
+            x = -triangle.vertFirst.x,
+            y = -triangle.vertFirst.y,
+            z = -triangle.vertFirst.z
         ),
         vertSecond = Point3D(
-            x = rightBottomBorder.x - triangle.vertSecond.x,
-            y = rightBottomBorder.y - triangle.vertSecond.y,
-            z = rightBottomBorder.z - triangle.vertSecond.z
+            x = -triangle.vertSecond.x,
+            y = -triangle.vertSecond.y,
+            z = -triangle.vertSecond.z
         ),
         vertThird = Point3D(
-            x = rightBottomBorder.x - triangle.vertThird.x,
-            y = rightBottomBorder.y - triangle.vertThird.y,
-            z = rightBottomBorder.z - triangle.vertThird.z
+            x = -triangle.vertThird.x,
+            y = -triangle.vertThird.y,
+            z = -triangle.vertThird.z
         )
     )
     return Polygon(result)

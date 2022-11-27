@@ -32,21 +32,25 @@ class PolygonsRenderer(
 
     fun render(polygons: List<Polygon>) {
         polygons.forEach {
-            drawPoligon(it)
+            drawPolygon(it)
         }
     }
 
-    private fun drawPoligon(polygon: Polygon) {
+    private fun drawPolygon(polygon: Polygon) {
         val triangleScaled = polygon.triangle.scale(xMult, yMult, zMult).shift(xShift, yShift, zShift)
-        val normalCos = getNormalCosinus(triangleScaled, cameraVector)
+        console.log("drawing $triangleScaled")
+
+        val distortedTriangle = getCameraPositionDistortion(triangleScaled)
+
+        val normalCos = getNormalCosinus(distortedTriangle, cameraVector)
         if (normalCos < 0) {
             return
         }
 
         val color = getColor(normalCos)
-        console.log("drawing $triangleScaled colored with $color")
+        console.log("distorted before drawing: $distortedTriangle colored with $color")
 
-        val focusArea = calcFocusArea(triangleScaled)
+        val focusArea = calcFocusArea(distortedTriangle)
         val leftBordX = focusArea.leftTop.x
         val rightBordX = focusArea.rightBottom.x
         val bottomBordY = focusArea.leftTop.y
@@ -62,7 +66,7 @@ class PolygonsRenderer(
             ).forEach { curY ->
                 paintPixelInTriangle(
                     pointCol = PointColored(curX, curY, color),
-                    basis = triangleScaled
+                    basis = distortedTriangle
                 )
             }
         }
@@ -70,20 +74,43 @@ class PolygonsRenderer(
 
     private fun paintPixelInTriangle(pointCol: PointColored, basis: Triangle3D) {
         val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, pointCol.point)
-//        console.log("Barycentric $barycentric for point $point")
-        if (barycentric.lambdaFirst >= 0 && barycentric.lambdaSecond >= 0 && barycentric.lambdaThird >= 0) {
-            val zBufferKey = pointCol.point.x.toInt() to pointCol.point.y.toInt()
-            val currZBuffer = zBuffer[zBufferKey] ?: Double.POSITIVE_INFINITY
-            val currZ = barycentric.lambdaFirst * basis.vertFirst.z + barycentric.lambdaSecond * basis.vertSecond.z +
-                    barycentric.lambdaThird * basis.vertThird.z
-            if (currZ < currZBuffer) {
-                zBuffer[zBufferKey] = currZ
-                canvas.drawPoint(
-                    coord = pointCol
-                )
-            }
+//        console.log("Barycentric $barycentric for point ${pointCol.point}")
+        if (barycentric.lambdaFirst < 0 || barycentric.lambdaSecond < 0 || barycentric.lambdaThird < 0) {
+            return
+        }
+
+        val zBufferKey = pointCol.point.x.toInt() to pointCol.point.y.toInt()
+        val currZBuffer = zBuffer[zBufferKey] ?: Double.POSITIVE_INFINITY
+        val currZ = barycentric.lambdaFirst * basis.vertFirst.z + barycentric.lambdaSecond * basis.vertSecond.z +
+                barycentric.lambdaThird * basis.vertThird.z
+        if (currZ < currZBuffer) {
+            zBuffer[zBufferKey] = currZ
+            canvas.drawPoint(
+                coord = pointCol
+            )
         }
     }
+
+    private fun getCameraPositionDistortion(triangle: Triangle3D): Triangle3D {
+        return Triangle3D(
+            vertFirst = Point3D(
+                x = triangle.vertFirst.x / (1 - triangle.vertFirst.z / cameraVector.z),
+                y = triangle.vertFirst.y / (1 - triangle.vertFirst.z / cameraVector.z),
+                z = triangle.vertFirst.z / (1 - triangle.vertFirst.z / cameraVector.z)
+            ),
+            vertSecond = Point3D(
+                x = triangle.vertSecond.x / (1 - triangle.vertSecond.z / cameraVector.z),
+                y = triangle.vertSecond.y / (1 - triangle.vertSecond.z / cameraVector.z),
+                z = triangle.vertSecond.z / (1 - triangle.vertSecond.z / cameraVector.z)
+            ),
+            vertThird = Point3D(
+                x = triangle.vertThird.x / (1 - triangle.vertThird.z / cameraVector.z),
+                y = triangle.vertThird.y / (1 - triangle.vertThird.z / cameraVector.z),
+                z = triangle.vertThird.z / (1 - triangle.vertThird.z / cameraVector.z)
+            )
+        )
+    }
+//    private fun getCameraPositionDistortion(triangle: Triangle3D) = triangle
 
     private fun calcFocusArea(triangle: Triangle3D): FocusArea {
         val leftTopX = minOf(triangle.vertFirst.x, triangle.vertSecond.x, triangle.vertThird.x)
@@ -111,8 +138,7 @@ class PolygonsRenderer(
         val nScalarWithCamera = n0 * cameraVector.x + n1 * cameraVector.y + n2 * cameraVector.z
         val normal = sqrt(n0.pow(2) + n1.pow(2) + n2.pow(2)) *
                 sqrt(cameraVector.x.pow(2) + cameraVector.y.pow(2) + cameraVector.z.pow(2))
-        //TODO убрать костыль!
-        return -nScalarWithCamera / normal
+        return nScalarWithCamera / normal
     }
 
     private data class FocusArea(
