@@ -1,8 +1,10 @@
+
 import dto.Point3D
 import dto.Polygon
 import dto.ThreeVector
 import dto.Triangle3D
 import kotlinx.browser.document
+import kotlinx.browser.window
 import org.w3c.dom.CanvasRenderingContext2D
 import org.w3c.dom.HTMLCanvasElement
 import reader.obj.ObjParser
@@ -23,13 +25,29 @@ fun main() {
         zMult = 300.0,
         xShift = 300.0,
         yShift = 300.0,
-        zShift = 300.0,
-        cameraVector = ThreeVector(.0, .0, -800.0)
+        zShift = 300.0
     )
 
     val objParser = ObjParser(ObjStubLinesProvider())
     val polygons = objParser.parse().map { makeUpsideDown(it) }
-    polygonsRenderer.render(polygons)
+    rerender(polygons, ThreeVector(.0, .0, -604.56), polygonsRenderer, ctx)
+
+    var lastWheelPosition = -60000.0
+    window.onwheel = {
+        lastWheelPosition += it.deltaY
+        console.log("scrolling, y = ${lastWheelPosition / 100}")
+        rerender(polygons, ThreeVector(.0, .0, lastWheelPosition / 100), polygonsRenderer, ctx)
+    }
+}
+
+private fun rerender(
+    polygons: List<Polygon>,
+    cameraVector: ThreeVector,
+    polygonsRenderer: PolygonsRenderer,
+    context: CanvasRenderingContext2D
+) {
+    context.clearRect(.0, .0, 800.0, 800.0)
+    polygonsRenderer.render(polygons, cameraVector)
 }
 
 private fun makeUpsideDown(polygon: Polygon): Polygon {

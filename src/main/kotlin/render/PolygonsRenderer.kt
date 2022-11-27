@@ -17,12 +17,9 @@ class PolygonsRenderer(
     private val zMult: Double = 1.0,
     private val xShift: Double = .0,
     private val yShift: Double = .0,
-    private val zShift: Double = .0,
-    private val cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0 * zMult),
+    private val zShift: Double = .0
 ) {
 
-    //TODO разобраться с координатами реальными и эрканными. Даблы везде не есть хорошо
-    private val zBuffer = mutableMapOf<Pair<Int, Int>, Double>()
 
     companion object {
 
@@ -32,17 +29,26 @@ class PolygonsRenderer(
 
     }
 
-    fun render(polygons: List<Polygon>) {
+    fun render(
+        polygons: List<Polygon>,
+        cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0 * zMult)
+    ) {
+        //TODO разобраться с координатами реальными и эрканными. Даблы везде не есть хорошо
+        val zBuffer = mutableMapOf<Pair<Int, Int>, Double>()
         polygons.forEach {
-            drawPolygon(it)
+            drawPolygon(it, cameraVector, zBuffer)
         }
     }
 
-    private fun drawPolygon(polygon: Polygon) {
+    private fun drawPolygon(
+        polygon: Polygon,
+        cameraVector: ThreeVector,
+        zBuffer: MutableMap<Pair<Int, Int>, Double>
+    ) {
         val triangleScaled = polygon.triangle.scale(xMult, yMult, zMult).shift(xShift, yShift, zShift)
         console.log("drawing $triangleScaled")
 
-        val distortedTriangle = getCameraPositionDistortion(triangleScaled)
+        val distortedTriangle = getCameraPositionDistortion(triangleScaled, cameraVector)
 
         val normalCos = getNormalCosinus(distortedTriangle, cameraVector)
         if (normalCos < 0) {
@@ -68,13 +74,18 @@ class PolygonsRenderer(
             ).forEach { curY ->
                 paintPixelInTriangle(
                     pointCol = PointColored(curX, curY, color),
-                    basis = distortedTriangle
+                    basis = distortedTriangle,
+                    zBuffer = zBuffer
                 )
             }
         }
     }
 
-    private fun paintPixelInTriangle(pointCol: PointColored, basis: Triangle3D) {
+    private fun paintPixelInTriangle(
+        pointCol: PointColored,
+        basis: Triangle3D,
+        zBuffer: MutableMap<Pair<Int, Int>, Double>
+    ) {
         val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, pointCol.point)
 //        console.log("Barycentric $barycentric for point ${pointCol.point}")
         if (barycentric.lambdaFirst < 0 || barycentric.lambdaSecond < 0 || barycentric.lambdaThird < 0) {
@@ -93,7 +104,7 @@ class PolygonsRenderer(
         }
     }
 
-    private fun getCameraPositionDistortion(triangle: Triangle3D): Triangle3D {
+    private fun getCameraPositionDistortion(triangle: Triangle3D, cameraVector: ThreeVector): Triangle3D {
         return Triangle3D(
             vertFirst = Point3D(
                 x = triangle.vertFirst.x / (1 - triangle.vertFirst.z / cameraVector.z),
