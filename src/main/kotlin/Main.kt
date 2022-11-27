@@ -24,7 +24,7 @@ fun main() {
         xShift = 300.0,
         yShift = 300.0,
         zShift = 300.0,
-        cameraVector = ThreeVector(.0, .0, -1000.0)
+        cameraVector = ThreeVector(.0, .0, -800.0)
     )
 
     val objParser = ObjParser(ObjStubLinesProvider())
