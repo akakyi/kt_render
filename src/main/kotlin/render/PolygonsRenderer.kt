@@ -14,7 +14,8 @@ class PolygonsRenderer(
     private val canvas: Canvas,
     private val xShift: Double = .0,
     private val yShift: Double = .0,
-    private val zShift: Double = .0
+    private val zShift: Double = .0,
+    private val distanceToScreen: Double = 1000.0
 ) {
 
 
@@ -48,12 +49,13 @@ class PolygonsRenderer(
         val distortedTriangle = getCameraPositionDistortion(triangleScaled, cameraVector)
 
         val normalCos = getNormalCosinus(distortedTriangle, cameraVector)
+        console.log("distorted before drawing: $distortedTriangle, normal: $normalCos")
         if (normalCos < 0) {
             return
         }
 
         val color = getColor(normalCos)
-        console.log("distorted before drawing: $distortedTriangle colored with $color")
+        console.log("Will draw, colored with $color")
 
         val focusArea = calcFocusArea(distortedTriangle)
         val leftBordX = focusArea.leftTop.x
@@ -90,10 +92,10 @@ class PolygonsRenderer(
         }
 
         val zBufferKey = pointCol.point.x.toInt() to pointCol.point.y.toInt()
-        val currZBuffer = zBuffer[zBufferKey] ?: Double.POSITIVE_INFINITY
+        val currZBuffer = zBuffer[zBufferKey] ?: Double.NEGATIVE_INFINITY
         val currZ = barycentric.lambdaFirst * basis.vertFirst.z + barycentric.lambdaSecond * basis.vertSecond.z +
                 barycentric.lambdaThird * basis.vertThird.z
-        if (currZ < currZBuffer) {
+        if (currZ > currZBuffer) {
             zBuffer[zBufferKey] = currZ
             canvas.drawPoint(
                 coord = pointCol
@@ -101,22 +103,42 @@ class PolygonsRenderer(
         }
     }
 
-    private fun getCameraPositionDistortion(triangle: Triangle3D, cameraVector: ThreeVector): Triangle3D {
+    private fun getCameraPositionDistortion(
+        triangle: Triangle3D,
+        cameraVector: ThreeVector
+    ): Triangle3D {
+//        return Triangle3D(
+//            vertFirst = Point3D(
+//                x = triangle.vertFirst.x / (1 - triangle.vertFirst.z / cameraVector.z),
+//                y = triangle.vertFirst.y / (1 - triangle.vertFirst.z / cameraVector.z),
+//                z = triangle.vertFirst.z / (1 - triangle.vertFirst.z / cameraVector.z)
+//            ),
+//            vertSecond = Point3D(
+//                x = triangle.vertSecond.x / (1 - triangle.vertSecond.z / cameraVector.z),
+//                y = triangle.vertSecond.y / (1 - triangle.vertSecond.z / cameraVector.z),
+//                z = triangle.vertSecond.z / (1 - triangle.vertSecond.z / cameraVector.z)
+//            ),
+//            vertThird = Point3D(
+//                x = triangle.vertThird.x / (1 - triangle.vertThird.z / cameraVector.z),
+//                y = triangle.vertThird.y / (1 - triangle.vertThird.z / cameraVector.z),
+//                z = triangle.vertThird.z / (1 - triangle.vertThird.z / cameraVector.z)
+//            )
+//        )
         return Triangle3D(
             vertFirst = Point3D(
-                x = triangle.vertFirst.x / (1 - triangle.vertFirst.z / cameraVector.z),
-                y = triangle.vertFirst.y / (1 - triangle.vertFirst.z / cameraVector.z),
-                z = triangle.vertFirst.z / (1 - triangle.vertFirst.z / cameraVector.z)
+                x = triangle.vertFirst.x * distanceToScreen / (cameraVector.z - triangle.vertFirst.z),
+                y = triangle.vertFirst.y * distanceToScreen / (cameraVector.z - triangle.vertFirst.z),
+                z = triangle.vertFirst.z * distanceToScreen / (cameraVector.z - triangle.vertFirst.z)
             ),
             vertSecond = Point3D(
-                x = triangle.vertSecond.x / (1 - triangle.vertSecond.z / cameraVector.z),
-                y = triangle.vertSecond.y / (1 - triangle.vertSecond.z / cameraVector.z),
-                z = triangle.vertSecond.z / (1 - triangle.vertSecond.z / cameraVector.z)
+                x = triangle.vertSecond.x * distanceToScreen / (cameraVector.z - triangle.vertSecond.z),
+                y = triangle.vertSecond.y * distanceToScreen / (cameraVector.z - triangle.vertSecond.z),
+                z = triangle.vertSecond.z * distanceToScreen / (cameraVector.z - triangle.vertSecond.z)
             ),
             vertThird = Point3D(
-                x = triangle.vertThird.x / (1 - triangle.vertThird.z / cameraVector.z),
-                y = triangle.vertThird.y / (1 - triangle.vertThird.z / cameraVector.z),
-                z = triangle.vertThird.z / (1 - triangle.vertThird.z / cameraVector.z)
+                x = triangle.vertThird.x * distanceToScreen / (cameraVector.z - triangle.vertThird.z),
+                y = triangle.vertThird.y * distanceToScreen / (cameraVector.z - triangle.vertThird.z),
+                z = triangle.vertThird.z * distanceToScreen / (cameraVector.z - triangle.vertThird.z)
             )
         )
     }
@@ -148,7 +170,8 @@ class PolygonsRenderer(
         val nScalarWithCamera = n0 * cameraVector.x + n1 * cameraVector.y + n2 * cameraVector.z
         val normal = sqrt(n0.pow(2) + n1.pow(2) + n2.pow(2)) *
                 sqrt(cameraVector.x.pow(2) + cameraVector.y.pow(2) + cameraVector.z.pow(2))
-        return nScalarWithCamera / normal
+        //TODO КОСТЫЛЬ!
+        return -nScalarWithCamera / normal
     }
 
     private data class FocusArea(

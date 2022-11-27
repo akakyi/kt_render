@@ -22,7 +22,8 @@ fun main() {
         canvas = CanvasRenderingContext2DToCanvasAdapter(ctx),
         xShift = 300.0,
         yShift = 300.0,
-        zShift = 300.0
+        zShift = 300.0,
+        distanceToScreen = 1000.0
     )
 
     val objParser = ObjParser(ObjStubLinesProvider())
@@ -30,9 +31,9 @@ fun main() {
         .map { makeUpsideDown(it) }
         .map { it.triangle.scale(xCoefficient = 300.0, yCoefficient = 300.0, zCoefficient = 300.0) }
         .map { Polygon(it) }
-    rerender(polygons, ThreeVector(.0, .0, -600.0), polygonsRenderer, ctx)
+    rerender(polygons, ThreeVector(.0, .0, 2000.0), polygonsRenderer, ctx)
 
-    var lastWheelPosition = -3000.0
+    var lastWheelPosition = 10000.0
     window.onwheel = {
         lastWheelPosition += it.deltaY
         console.log("scrolling, y = ${lastWheelPosition / 5}")
@@ -57,17 +58,17 @@ private fun makeUpsideDown(polygon: Polygon): Polygon {
         vertFirst = Point3D(
             x = -triangle.vertFirst.x,
             y = -triangle.vertFirst.y,
-            z = -triangle.vertFirst.z
+            z = triangle.vertFirst.z
         ),
         vertSecond = Point3D(
             x = -triangle.vertSecond.x,
             y = -triangle.vertSecond.y,
-            z = -triangle.vertSecond.z
+            z = triangle.vertSecond.z
         ),
         vertThird = Point3D(
             x = -triangle.vertThird.x,
             y = -triangle.vertThird.y,
-            z = -triangle.vertThird.z
+            z = triangle.vertThird.z
         )
     )
     return Polygon(result)
