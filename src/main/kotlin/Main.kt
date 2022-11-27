@@ -20,23 +20,23 @@ fun main() {
 
     val polygonsRenderer = PolygonsRenderer(
         canvas = CanvasRenderingContext2DToCanvasAdapter(ctx),
-        xMult = 300.0,
-        yMult = 300.0,
-        zMult = 300.0,
         xShift = 300.0,
         yShift = 300.0,
         zShift = 300.0
     )
 
     val objParser = ObjParser(ObjStubLinesProvider())
-    val polygons = objParser.parse().map { makeUpsideDown(it) }
-    rerender(polygons, ThreeVector(.0, .0, -604.56), polygonsRenderer, ctx)
+    val polygons = objParser.parse()
+        .map { makeUpsideDown(it) }
+        .map { it.triangle.scale(xCoefficient = 300.0, yCoefficient = 300.0, zCoefficient = 300.0) }
+        .map { Polygon(it) }
+    rerender(polygons, ThreeVector(.0, .0, -600.0), polygonsRenderer, ctx)
 
-    var lastWheelPosition = -60000.0
+    var lastWheelPosition = -3000.0
     window.onwheel = {
         lastWheelPosition += it.deltaY
-        console.log("scrolling, y = ${lastWheelPosition / 100}")
-        rerender(polygons, ThreeVector(.0, .0, lastWheelPosition / 100), polygonsRenderer, ctx)
+        console.log("scrolling, y = ${lastWheelPosition / 5}")
+        rerender(polygons, ThreeVector(.0, .0, lastWheelPosition / 5), polygonsRenderer, ctx)
     }
 }
 

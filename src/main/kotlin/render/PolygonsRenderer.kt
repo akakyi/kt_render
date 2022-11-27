@@ -12,9 +12,6 @@ import kotlin.math.sqrt
 // по факту и есть матрица камеры, но при этом фонарик как бы просвечивает модель насквозь. Сложно визуализировать -_-
 class PolygonsRenderer(
     private val canvas: Canvas,
-    private val xMult: Double = 1.0,
-    private val yMult: Double = 1.0,
-    private val zMult: Double = 1.0,
     private val xShift: Double = .0,
     private val yShift: Double = .0,
     private val zShift: Double = .0
@@ -31,7 +28,7 @@ class PolygonsRenderer(
 
     fun render(
         polygons: List<Polygon>,
-        cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0 * zMult)
+        cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0)
     ) {
         //TODO разобраться с координатами реальными и эрканными. Даблы везде не есть хорошо
         val zBuffer = mutableMapOf<Pair<Int, Int>, Double>()
@@ -45,7 +42,7 @@ class PolygonsRenderer(
         cameraVector: ThreeVector,
         zBuffer: MutableMap<Pair<Int, Int>, Double>
     ) {
-        val triangleScaled = polygon.triangle.scale(xMult, yMult, zMult).shift(xShift, yShift, zShift)
+        val triangleScaled = polygon.triangle.shift(xShift, yShift, zShift)
         console.log("drawing $triangleScaled")
 
         val distortedTriangle = getCameraPositionDistortion(triangleScaled, cameraVector)
