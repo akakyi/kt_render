@@ -19,6 +19,8 @@ class PolygonsRenderer(
     private val canvas: Canvas,
     private val logsProvider: LogsProvider,
     private val measureProvider: MeasureProvider,
+    private val screenHeight: Int,
+    private val screenWidth: Int,
     private val xShift: Double = .0,
     private val yShift: Double = .0,
     private val zShift: Double = .0,
@@ -38,7 +40,11 @@ class PolygonsRenderer(
     ) {
         val startMillis = measureProvider.currentMillis()
 
-        val zBuffer = mutableMapOf<Pair<Int, Int>, Double>()
+        val zBuffer = Array(screenWidth) {
+            Array(screenHeight) {
+                Double.NEGATIVE_INFINITY
+            }
+        }
         polygons.forEach {
             drawPolygon(it, cameraVector, zBuffer)
         }
@@ -50,7 +56,7 @@ class PolygonsRenderer(
     private fun drawPolygon(
         polygon: Polygon,
         cameraVector: ThreeVector,
-        zBuffer: MutableMap<Pair<Int, Int>, Double>
+        zBuffer: Array<Array<Double>>
     ) {
         val startMillis = measureProvider.currentMillis()
 
@@ -96,7 +102,7 @@ class PolygonsRenderer(
     private fun paintPixelInTriangle(
         pointCol: ScreenPointColored,
         basis: Triangle3D,
-        zBuffer: MutableMap<Pair<Int, Int>, Double>
+        zBuffer: Array<Array<Double>>
     ) {
         val startMillis = measureProvider.currentMillis()
 
@@ -105,12 +111,11 @@ class PolygonsRenderer(
             return
         }
 
-        val zBufferKey = pointCol.point.x to pointCol.point.y
-        val currZBuffer = zBuffer[zBufferKey] ?: Double.NEGATIVE_INFINITY
+        val currZBuffer = zBuffer[pointCol.point.x][pointCol.point.y]
         val currZ = barycentric.lambdaFirst * basis.vertFirst.z + barycentric.lambdaSecond * basis.vertSecond.z +
                 barycentric.lambdaThird * basis.vertThird.z
         if (currZ > currZBuffer) {
-            zBuffer[zBufferKey] = currZ
+            zBuffer[pointCol.point.x][pointCol.point.y] = currZ
             canvas.drawPoint(
                 coord = pointCol
             )

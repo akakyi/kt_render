@@ -10,8 +10,8 @@ import org.w3c.dom.HTMLCanvasElement
 import reader.obj.ObjParser
 import reader.obj.ObjStubLinesProvider
 import render.PolygonsRenderer
-import utils.ConsoleLogsProvider
-import utils.ConsoleMeasureProvider
+import utils.EmptyLogsProvider
+import utils.EmptyMeasureProvider
 
 //Basis: https://habr.com/ru/post/249467/ & Goshin, digital graphics lecturer from SSAU
 fun main() {
@@ -22,8 +22,10 @@ fun main() {
 
     val polygonsRenderer = PolygonsRenderer(
         canvas = CanvasRenderingContext2DToCanvasAdapter(ctx),
-        logsProvider = ConsoleLogsProvider(),
-        measureProvider = ConsoleMeasureProvider(),
+        logsProvider = EmptyLogsProvider(),
+        measureProvider = EmptyMeasureProvider(),
+        screenWidth = 800,
+        screenHeight = 400,
         xShift = 300.0,
         yShift = 600.0,
         zShift = 300.0,
