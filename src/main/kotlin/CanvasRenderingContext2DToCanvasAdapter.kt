@@ -1,6 +1,7 @@
-import dto.Point
-import dto.PointColored
+
 import dto.RGBAColor
+import dto.ScreenPoint
+import dto.ScreenPointColored
 import dto.Triangle
 import org.w3c.dom.CanvasRenderingContext2D
 import render.Canvas
@@ -9,17 +10,17 @@ class CanvasRenderingContext2DToCanvasAdapter(
     private val context: CanvasRenderingContext2D
 ) : Canvas {
 
-    override fun drawLine(start: Point, finish: Point, color: RGBAColor) {
+    override fun drawLine(start: ScreenPoint, finish: ScreenPoint, color: RGBAColor) {
         context.fillStyle = "rgb(${color.redChannel}, ${color.greenChannel}, ${color.blueChannel})"
-        context.moveTo(start.x, start.y)
-        context.lineTo(finish.x, finish.y)
+        context.moveTo(start.x.toDouble(), start.y.toDouble())
+        context.lineTo(finish.x.toDouble(), finish.y.toDouble())
     }
 
-    override fun drawPoint(coord: PointColored, pointSize: Double) {
+    override fun drawPoint(coord: ScreenPointColored, pointSize: Double) {
         val color = coord.color
         context.fillStyle = "rgb(${color.redChannel}, ${color.greenChannel}, ${color.blueChannel})"
         val point = coord.point
-        context.fillRect(point.x, point.y, pointSize, pointSize)
+        context.fillRect(point.x.toDouble(), point.y.toDouble(), pointSize, pointSize)
     }
 
     override fun canDrawTriangle(triangle: Triangle, color: RGBAColor) = true

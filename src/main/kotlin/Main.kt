@@ -11,6 +11,7 @@ import reader.obj.ObjParser
 import reader.obj.ObjStubLinesProvider
 import render.PolygonsRenderer
 import utils.ConsoleLogsProvider
+import utils.ConsoleMeasureProvider
 
 //Basis: https://habr.com/ru/post/249467/ & Goshin, digital graphics lecturer from SSAU
 fun main() {
@@ -22,6 +23,7 @@ fun main() {
     val polygonsRenderer = PolygonsRenderer(
         canvas = CanvasRenderingContext2DToCanvasAdapter(ctx),
         logsProvider = ConsoleLogsProvider(),
+        measureProvider = ConsoleMeasureProvider(),
         xShift = 300.0,
         yShift = 600.0,
         zShift = 300.0,

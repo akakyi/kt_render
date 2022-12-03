@@ -3,6 +3,7 @@ package render
 import dto.*
 import utils.BarycentricCalculator
 import utils.LogsProvider
+import utils.MeasureProvider
 import utils.times
 import kotlin.math.*
 
@@ -17,6 +18,7 @@ import kotlin.math.*
 class PolygonsRenderer(
     private val canvas: Canvas,
     private val logsProvider: LogsProvider,
+    private val measureProvider: MeasureProvider,
     private val xShift: Double = .0,
     private val yShift: Double = .0,
     private val zShift: Double = .0,
@@ -26,8 +28,6 @@ class PolygonsRenderer(
 
     companion object {
 
-        const val STEP = 1
-
         val WHITE_RGB = RGBAColor(255, 255, 255, 0)
 
     }
@@ -36,11 +36,15 @@ class PolygonsRenderer(
         polygons: List<Polygon>,
         cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0)
     ) {
-        //TODO разобраться с координатами реальными и эрканными. Даблы везде не есть хорошо
+        val startMillis = measureProvider.currentMillis()
+
         val zBuffer = mutableMapOf<Pair<Int, Int>, Double>()
         polygons.forEach {
             drawPolygon(it, cameraVector, zBuffer)
         }
+
+        val endMillis = measureProvider.currentMillis()
+        logsProvider.debug("Millis taken for render: ${endMillis - startMillis}")
     }
 
     private fun drawPolygon(
@@ -48,6 +52,8 @@ class PolygonsRenderer(
         cameraVector: ThreeVector,
         zBuffer: MutableMap<Pair<Int, Int>, Double>
     ) {
+        val startMillis = measureProvider.currentMillis()
+
         val triangleScaled = polygon.triangle.shift(xShift, yShift, zShift)
         logsProvider.debug("drawing $triangleScaled")
 
@@ -69,34 +75,37 @@ class PolygonsRenderer(
         val bottomBordY = focusArea.leftTop.y
         val topBordY = focusArea.rightBottom.y
 
-        generateSequence(
-            seed = leftBordX,
-            nextFunction = { if (it < rightBordX) it + STEP else null }
-        ).forEach { curX ->
-            generateSequence(
-                seed = bottomBordY,
-                nextFunction = { if (it < topBordY) it + STEP else null }
-            ).forEach { curY ->
+        //TODO generateSequence ощущается медленной, делаю костыльно
+        val startMillisPainting = measureProvider.currentMillis()
+        for (i in leftBordX..rightBordX) {
+            for (j in bottomBordY..topBordY) {
                 paintPixelInTriangle(
-                    pointCol = PointColored(curX, curY, color),
+                    pointCol = ScreenPointColored(i, j, color),
                     basis = distortedTriangle,
                     zBuffer = zBuffer
                 )
             }
         }
+        val endMillisPainting = measureProvider.currentMillis()
+        logsProvider.debug("Millis taken for painting: ${endMillisPainting - startMillisPainting}")
+
+        val endMillis = measureProvider.currentMillis()
+        logsProvider.debug("Millis taken for draw polygon: ${endMillis - startMillis}")
     }
 
     private fun paintPixelInTriangle(
-        pointCol: PointColored,
+        pointCol: ScreenPointColored,
         basis: Triangle3D,
         zBuffer: MutableMap<Pair<Int, Int>, Double>
     ) {
+        val startMillis = measureProvider.currentMillis()
+
         val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, pointCol.point)
         if (barycentric.lambdaFirst < 0 || barycentric.lambdaSecond < 0 || barycentric.lambdaThird < 0) {
             return
         }
 
-        val zBufferKey = pointCol.point.x.toInt() to pointCol.point.y.toInt()
+        val zBufferKey = pointCol.point.x to pointCol.point.y
         val currZBuffer = zBuffer[zBufferKey] ?: Double.NEGATIVE_INFINITY
         val currZ = barycentric.lambdaFirst * basis.vertFirst.z + barycentric.lambdaSecond * basis.vertSecond.z +
                 barycentric.lambdaThird * basis.vertThird.z
@@ -106,6 +115,9 @@ class PolygonsRenderer(
                 coord = pointCol
             )
         }
+
+        val endMillis = measureProvider.currentMillis()
+        logsProvider.debug("Millis taken for draw pixel: ${endMillis - startMillis}")
     }
 
     private fun getCameraPositionDistortion(
@@ -113,6 +125,8 @@ class PolygonsRenderer(
         rotationCoeffMatrix: Array<Array<Double>>,
         cameraVector: ThreeVector
     ): Triangle3D {
+        val startMillis = measureProvider.currentMillis()
+
         val firstPerspectiveCoeff = preparePerspectiveCoeffMatrix(triangle.vertFirst, cameraVector)
         val first = preparePerspectivePointMatrix(triangle.vertFirst)
         val vertFirstMatrix = rotationCoeffMatrix * firstPerspectiveCoeff * first
@@ -144,7 +158,10 @@ class PolygonsRenderer(
                 y = vertThirdMatrix[1][0] / vertThirdMatrix[3][0],
                 z = vertThirdMatrix[2][0] / vertThirdMatrix[3][0]
             )
-        )
+        ).also {
+            val endMillis = measureProvider.currentMillis()
+            logsProvider.debug("Millis taken for distortion triangle: ${endMillis - startMillis}")
+        }
     }
 //    private fun getCameraPositionDistortion(triangle: Triangle3D) = triangle
 
@@ -201,8 +218,8 @@ class PolygonsRenderer(
         val rightDownY = maxOf(triangle.vertFirst.y, triangle.vertSecond.y, triangle.vertThird.y)
 
         return FocusArea(
-            leftTop = Point(leftTopX, leftTopY),
-            rightBottom = Point(rightDownX, rightDownY)
+            leftTop = ScreenPoint(leftTopX.toInt(), leftTopY.toInt()),
+            rightBottom = ScreenPoint(rightDownX.toInt(), rightDownY.toInt())
         )
     }
 
@@ -225,8 +242,8 @@ class PolygonsRenderer(
     }
 
     private data class FocusArea(
-        val leftTop: Point,
-        val rightBottom: Point
+        val leftTop: ScreenPoint,
+        val rightBottom: ScreenPoint
     )
 
 }
