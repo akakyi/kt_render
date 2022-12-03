@@ -105,18 +105,23 @@ class PolygonsRenderer(
         basis: Triangle3D,
         zBuffer: Array<Array<Double>>
     ) {
+        val screenPoint = pointCol.point
+        if (screenPoint.x < 0 || screenPoint.x >= screenWidth || screenPoint.y < 0 || screenPoint.y >= screenHeight) {
+            return
+        }
+
         val startMillis = measureProvider.currentMillis()
 
-        val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, pointCol.point)
+        val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, screenPoint)
         if (barycentric.lambdaFirst < 0 || barycentric.lambdaSecond < 0 || barycentric.lambdaThird < 0) {
             return
         }
 
-        val currZBuffer = zBuffer[pointCol.point.x][pointCol.point.y]
+        val currZBuffer = zBuffer[screenPoint.x][screenPoint.y]
         val currZ = barycentric.lambdaFirst * basis.vertFirst.z + barycentric.lambdaSecond * basis.vertSecond.z +
                 barycentric.lambdaThird * basis.vertThird.z
         if (currZ > currZBuffer) {
-            zBuffer[pointCol.point.x][pointCol.point.y] = currZ
+            zBuffer[screenPoint.x][screenPoint.y] = currZ
             canvas.drawPoint(
                 coord = pointCol
             )
@@ -171,6 +176,8 @@ class PolygonsRenderer(
     }
 //    private fun getCameraPositionDistortion(triangle: Triangle3D) = triangle
 
+    //Я сам не совсем понимаю, что конкретно я тут делаю. Нужно будет на бумаге расписать, ибо проекция понятна
+    //вращение не оч понятно
     private fun prepareRotationMatrix(
         angleVertical: Int,
         angleHorizontal: Int,
@@ -181,39 +188,42 @@ class PolygonsRenderer(
         val radDepth = angleDepth.toDouble() * PI / 180
 
         val vertical = arrayOf(
-            arrayOf(cos(radVertical), sin(radVertical), .0, .0),
-            arrayOf(-sin(radVertical), cos(radVertical), .0, .0),
-            arrayOf(.0, .0, 1.0, 0.0),
-            arrayOf(.0, .0, 0.0, 1.0)
+            arrayOf( cos(radVertical), sin(radVertical), .0,  .0),
+            arrayOf(-sin(radVertical), cos(radVertical), .0,  .0),
+            arrayOf(.0,            .0,                  1.0,  .0),
+            arrayOf(.0,            .0,                   .0, 1.0)
         )
         val horizontal = arrayOf(
-            arrayOf(cos(radHorizontal), 0.0, sin(radHorizontal), .0),
-            arrayOf(0.0, 1.0, 0.0, .0),
-            arrayOf(-sin(radHorizontal), 0.0, cos(radHorizontal), .0),
-            arrayOf(.0, .0, .0, 1.0)
+            arrayOf( cos(radHorizontal), 0.0, sin(radHorizontal),  .0),
+            arrayOf(                 .0, 1.0,                 .0,  .0),
+            arrayOf(-sin(radHorizontal), 0.0, cos(radHorizontal),  .0),
+            arrayOf(                 .0, 0.0,                 .0, 1.0)
         )
         val depth = arrayOf(
-            arrayOf(1.0, .0, .0, .0),
-            arrayOf(0.0, cos(radDepth), sin(radDepth), .0),
-            arrayOf(0.0, -sin(radDepth), cos(radDepth), .0),
-            arrayOf(.0, .0, .0, 1.0)
+            arrayOf(1.0,  .0,            .0,            .0),
+            arrayOf( .0, 1.0,            .0,            .0),
+            arrayOf( .0, .0,  cos(radDepth), sin(radDepth)),
+            arrayOf( .0, .0, -sin(radDepth), cos(radDepth))
         )
 
         return (vertical * horizontal * depth)
-            .also { logsProvider.debugObj(it) }
+            .also {
+                logsProvider.debug("Rotation matrix:")
+                logsProvider.debugObj(it)
+            }
     }
 
     private fun preparePerspectivePointMatrix(vertex: Point3D) = arrayOf(
         arrayOf(vertex.x),
         arrayOf(vertex.y),
         arrayOf(vertex.z),
-        arrayOf(1.0)
+        arrayOf(     1.0)
     )
 
     private fun preparePerspectiveCoeffMatrix(vertex: Point3D, cameraVector: ThreeVector) = arrayOf(
-        arrayOf(1.0, 0.0, 0.0, 0.0),
-        arrayOf(0.0, 1.0, 0.0, 0.0),
-        arrayOf(0.0, 0.0, 1.0, 0.0),
+        arrayOf(1.0, 0.0, 0.0,                                            0.0),
+        arrayOf(0.0, 1.0, 0.0,                                            0.0),
+        arrayOf(0.0, 0.0, 1.0,                                            0.0),
         arrayOf(0.0, 0.0, 0.0, (cameraVector.z - vertex.z) / distanceToScreen)
     )
 

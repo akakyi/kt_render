@@ -86,17 +86,17 @@ fun main() {
 
             if (screenY > lastKnownScreenY) {
                 lastKnownAngle = Angle(
-                    vertical = lastKnownAngle.vertical,
+                    vertical = lastKnownAngle.vertical + 5,
                     horizontal = lastKnownAngle.horizontal,
-                    depth = lastKnownAngle.depth + 5
+                    depth = lastKnownAngle.depth
                 )
                 pointChanged = true
             }
             if (screenY < lastKnownScreenX) {
                 lastKnownAngle = Angle(
-                    vertical = lastKnownAngle.vertical,
+                    vertical = lastKnownAngle.vertical - 5,
                     horizontal = lastKnownAngle.horizontal,
-                    depth = lastKnownAngle.depth - 5
+                    depth = lastKnownAngle.depth
                 )
                 pointChanged = true
             }
