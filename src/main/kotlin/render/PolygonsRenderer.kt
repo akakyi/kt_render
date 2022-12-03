@@ -2,16 +2,21 @@ package render
 
 import dto.*
 import utils.BarycentricCalculator
-import kotlin.math.pow
-import kotlin.math.sqrt
+import utils.LogsProvider
+import utils.times
+import kotlin.math.*
 
 // Матрицы моё слабое место. Я не понял ни-хре-на
 // (кроме того, что одно это матрица поворота и другое матрица смещения) и тупо переписал с хабра тот кусок -_-
 // для норм понимания почитать НЕ уставшим https://habr.com/ru/post/248611/
 // P.S. немного к статье выше: то, что чел называет камерой, по факту фонарик. А то, на что проецирует фонарик,
 // по факту и есть матрица камеры, но при этом фонарик как бы просвечивает модель насквозь. Сложно визуализировать -_-
+// P.P.S. так, сделал слегка по-своему (крыво). Считаю исходя из того, что у меня есть не камера,
+// а виртуальный экран и его фокус. Из параметров у меня теперь фокусное расстояние и расстояние от фокуса до "экрана"
+// так гораздо проще понимать как по мне, да и выглядит результат поприкольнее. Но время рендера просто ппц
 class PolygonsRenderer(
     private val canvas: Canvas,
+    private val logsProvider: LogsProvider,
     private val xShift: Double = .0,
     private val yShift: Double = .0,
     private val zShift: Double = .0,
@@ -44,18 +49,19 @@ class PolygonsRenderer(
         zBuffer: MutableMap<Pair<Int, Int>, Double>
     ) {
         val triangleScaled = polygon.triangle.shift(xShift, yShift, zShift)
-        console.log("drawing $triangleScaled")
+        logsProvider.debug("drawing $triangleScaled")
 
-        val distortedTriangle = getCameraPositionDistortion(triangleScaled, cameraVector)
+        val rotationCoeffMatrix = prepareRotationMatrix(45.0, 45.0, 45.0)
+        val distortedTriangle = getCameraPositionDistortion(triangleScaled, rotationCoeffMatrix, cameraVector)
 
         val normalCos = getNormalCosinus(distortedTriangle, cameraVector)
-        console.log("distorted before drawing: $distortedTriangle, normal: $normalCos")
+        logsProvider.debug("distorted before drawing: $distortedTriangle, normal: $normalCos")
         if (normalCos < 0) {
             return
         }
 
         val color = getColor(normalCos)
-        console.log("Will draw, colored with $color")
+        logsProvider.debug("Will draw, colored with $color")
 
         val focusArea = calcFocusArea(distortedTriangle)
         val leftBordX = focusArea.leftTop.x
@@ -86,7 +92,6 @@ class PolygonsRenderer(
         zBuffer: MutableMap<Pair<Int, Int>, Double>
     ) {
         val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, pointCol.point)
-//        console.log("Barycentric $barycentric for point ${pointCol.point}")
         if (barycentric.lambdaFirst < 0 || barycentric.lambdaSecond < 0 || barycentric.lambdaThird < 0) {
             return
         }
@@ -105,44 +110,89 @@ class PolygonsRenderer(
 
     private fun getCameraPositionDistortion(
         triangle: Triangle3D,
+        rotationCoeffMatrix: Array<Array<Double>>,
         cameraVector: ThreeVector
     ): Triangle3D {
-//        return Triangle3D(
-//            vertFirst = Point3D(
-//                x = triangle.vertFirst.x / (1 - triangle.vertFirst.z / cameraVector.z),
-//                y = triangle.vertFirst.y / (1 - triangle.vertFirst.z / cameraVector.z),
-//                z = triangle.vertFirst.z / (1 - triangle.vertFirst.z / cameraVector.z)
-//            ),
-//            vertSecond = Point3D(
-//                x = triangle.vertSecond.x / (1 - triangle.vertSecond.z / cameraVector.z),
-//                y = triangle.vertSecond.y / (1 - triangle.vertSecond.z / cameraVector.z),
-//                z = triangle.vertSecond.z / (1 - triangle.vertSecond.z / cameraVector.z)
-//            ),
-//            vertThird = Point3D(
-//                x = triangle.vertThird.x / (1 - triangle.vertThird.z / cameraVector.z),
-//                y = triangle.vertThird.y / (1 - triangle.vertThird.z / cameraVector.z),
-//                z = triangle.vertThird.z / (1 - triangle.vertThird.z / cameraVector.z)
-//            )
-//        )
+        val firstPerspectiveCoeff = preparePerspectiveCoeffMatrix(triangle.vertFirst, cameraVector)
+        val first = preparePerspectivePointMatrix(triangle.vertFirst)
+        val vertFirstMatrix = rotationCoeffMatrix * firstPerspectiveCoeff * first
+        logsProvider.debugObj(vertFirstMatrix)
+
+        val secondPerspectiveCoeff = preparePerspectiveCoeffMatrix(triangle.vertSecond, cameraVector)
+        val second = preparePerspectivePointMatrix(triangle.vertSecond)
+        val vertSecondMatrix = rotationCoeffMatrix * secondPerspectiveCoeff * second
+        logsProvider.debugObj(vertSecondMatrix)
+
+        val thirdPerspectiveCoeff = preparePerspectiveCoeffMatrix(triangle.vertThird, cameraVector)
+        val third = preparePerspectivePointMatrix(triangle.vertThird)
+        val vertThirdMatrix = rotationCoeffMatrix * thirdPerspectiveCoeff * third
+        logsProvider.debugObj(vertThirdMatrix)
+
         return Triangle3D(
             vertFirst = Point3D(
-                x = triangle.vertFirst.x * distanceToScreen / (cameraVector.z - triangle.vertFirst.z),
-                y = triangle.vertFirst.y * distanceToScreen / (cameraVector.z - triangle.vertFirst.z),
-                z = triangle.vertFirst.z * distanceToScreen / (cameraVector.z - triangle.vertFirst.z)
+                x = vertFirstMatrix[0][0] / vertFirstMatrix[3][0],
+                y = vertFirstMatrix[1][0] / vertFirstMatrix[3][0],
+                z = vertFirstMatrix[2][0] / vertFirstMatrix[3][0]
             ),
             vertSecond = Point3D(
-                x = triangle.vertSecond.x * distanceToScreen / (cameraVector.z - triangle.vertSecond.z),
-                y = triangle.vertSecond.y * distanceToScreen / (cameraVector.z - triangle.vertSecond.z),
-                z = triangle.vertSecond.z * distanceToScreen / (cameraVector.z - triangle.vertSecond.z)
+                x = vertSecondMatrix[0][0] / vertSecondMatrix[3][0],
+                y = vertSecondMatrix[1][0] / vertSecondMatrix[3][0],
+                z = vertSecondMatrix[2][0] / vertSecondMatrix[3][0]
             ),
             vertThird = Point3D(
-                x = triangle.vertThird.x * distanceToScreen / (cameraVector.z - triangle.vertThird.z),
-                y = triangle.vertThird.y * distanceToScreen / (cameraVector.z - triangle.vertThird.z),
-                z = triangle.vertThird.z * distanceToScreen / (cameraVector.z - triangle.vertThird.z)
+                x = vertThirdMatrix[0][0] / vertThirdMatrix[3][0],
+                y = vertThirdMatrix[1][0] / vertThirdMatrix[3][0],
+                z = vertThirdMatrix[2][0] / vertThirdMatrix[3][0]
             )
         )
     }
 //    private fun getCameraPositionDistortion(triangle: Triangle3D) = triangle
+
+    private fun prepareRotationMatrix(
+        angleVertical: Double,
+        angleHorizontal: Double,
+        angleDepth: Double
+    ): Array<Array<Double>> {
+        val radVertical = angleVertical * PI / 180
+        val radHorizontal = angleHorizontal * PI / 180
+        val radDepth = angleDepth * PI / 180
+
+        val vertical = arrayOf(
+            arrayOf(cos(radVertical), sin(radVertical), .0, .0),
+            arrayOf(-sin(radVertical), cos(radVertical), .0, .0),
+            arrayOf(.0, .0, 1.0, 0.0),
+            arrayOf(.0, .0, 0.0, 1.0)
+        )
+        val horizontal = arrayOf(
+            arrayOf(cos(radHorizontal), 0.0, sin(radHorizontal), .0),
+            arrayOf(0.0, 1.0, 0.0, .0),
+            arrayOf(-sin(radHorizontal), 0.0, cos(radHorizontal), .0),
+            arrayOf(.0, .0, .0, 1.0)
+        )
+        val depth = arrayOf(
+            arrayOf(1.0, .0, .0, .0),
+            arrayOf(0.0, cos(radDepth), sin(radDepth), .0),
+            arrayOf(0.0, -sin(radDepth), cos(radDepth), .0),
+            arrayOf(.0, .0, .0, 1.0)
+        )
+
+        return (vertical * horizontal * depth)
+            .also { logsProvider.debugObj(it) }
+    }
+
+    private fun preparePerspectivePointMatrix(vertex: Point3D) = arrayOf(
+        arrayOf(vertex.x),
+        arrayOf(vertex.y),
+        arrayOf(vertex.z),
+        arrayOf(1.0)
+    )
+
+    private fun preparePerspectiveCoeffMatrix(vertex: Point3D, cameraVector: ThreeVector) = arrayOf(
+        arrayOf(1.0, 0.0, 0.0, 0.0),
+        arrayOf(0.0, 1.0, 0.0, 0.0),
+        arrayOf(0.0, 0.0, 1.0, 0.0),
+        arrayOf(0.0, 0.0, 0.0, (cameraVector.z - vertex.z) / distanceToScreen)
+    )
 
     private fun calcFocusArea(triangle: Triangle3D): FocusArea {
         val leftTopX = minOf(triangle.vertFirst.x, triangle.vertSecond.x, triangle.vertThird.x)
