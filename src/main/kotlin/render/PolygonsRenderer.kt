@@ -36,7 +36,8 @@ class PolygonsRenderer(
 
     fun render(
         polygons: List<Polygon>,
-        cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0)
+        cameraVector: ThreeVector = ThreeVector(.0, .0, 1.0),
+        angle: Angle = Angle(0, 0, 0)
     ) {
         val startMillis = measureProvider.currentMillis()
 
@@ -46,7 +47,7 @@ class PolygonsRenderer(
             }
         }
         polygons.forEach {
-            drawPolygon(it, cameraVector, zBuffer)
+            drawPolygon(it, cameraVector, angle, zBuffer)
         }
 
         val endMillis = measureProvider.currentMillis()
@@ -56,6 +57,7 @@ class PolygonsRenderer(
     private fun drawPolygon(
         polygon: Polygon,
         cameraVector: ThreeVector,
+        angle: Angle,
         zBuffer: Array<Array<Double>>
     ) {
         val startMillis = measureProvider.currentMillis()
@@ -63,7 +65,7 @@ class PolygonsRenderer(
         val triangleScaled = polygon.triangle.shift(xShift, yShift, zShift)
         logsProvider.debug("drawing $triangleScaled")
 
-        val rotationCoeffMatrix = prepareRotationMatrix(45.0, 45.0, 45.0)
+        val rotationCoeffMatrix = prepareRotationMatrix(angle.vertical, angle.horizontal, angle.depth)
         val distortedTriangle = getCameraPositionDistortion(triangleScaled, rotationCoeffMatrix, cameraVector)
 
         val normalCos = getNormalCosinus(distortedTriangle, cameraVector)
@@ -81,7 +83,6 @@ class PolygonsRenderer(
         val bottomBordY = focusArea.leftTop.y
         val topBordY = focusArea.rightBottom.y
 
-        //TODO generateSequence ощущается медленной, делаю костыльно
         val startMillisPainting = measureProvider.currentMillis()
         for (i in leftBordX..rightBordX) {
             for (j in bottomBordY..topBordY) {
@@ -171,13 +172,13 @@ class PolygonsRenderer(
 //    private fun getCameraPositionDistortion(triangle: Triangle3D) = triangle
 
     private fun prepareRotationMatrix(
-        angleVertical: Double,
-        angleHorizontal: Double,
-        angleDepth: Double
+        angleVertical: Int,
+        angleHorizontal: Int,
+        angleDepth: Int
     ): Array<Array<Double>> {
-        val radVertical = angleVertical * PI / 180
-        val radHorizontal = angleHorizontal * PI / 180
-        val radDepth = angleDepth * PI / 180
+        val radVertical = angleVertical.toDouble() * PI / 180
+        val radHorizontal = angleHorizontal.toDouble() * PI / 180
+        val radDepth = angleDepth.toDouble() * PI / 180
 
         val vertical = arrayOf(
             arrayOf(cos(radVertical), sin(radVertical), .0, .0),
