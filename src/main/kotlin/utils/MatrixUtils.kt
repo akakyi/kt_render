@@ -18,6 +18,10 @@ operator fun Array<Array<Double>>.times(right: Array<Array<Double>>): Array<Arra
 
 object MatrixUtils {
 
-
+//    fun concat(left: Array<Array<Double>>, right: Array<Array<Double>>): Array<Array<Double>> {
+//        val rows = left.size
+//        val columns = left[0].size + right[0].size
+//        val
+//    }
 
 }
