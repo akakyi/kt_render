@@ -200,10 +200,10 @@ class PolygonsRenderer(
             arrayOf(                 .0, 0.0,                 .0, 1.0)
         )
         val depth = arrayOf(
-            arrayOf(1.0,  .0,            .0,            .0),
-            arrayOf( .0, 1.0,            .0,            .0),
-            arrayOf( .0, .0,  cos(radDepth), sin(radDepth)),
-            arrayOf( .0, .0, -sin(radDepth), cos(radDepth))
+            arrayOf(1.0,             .0,            .0,   .0),
+            arrayOf( .0,  cos(radDepth),  sin(radDepth),  .0),
+            arrayOf( .0, -sin(radDepth),  cos(radDepth),  .0),
+            arrayOf( .0, .0,             .0,             1.0)
         )
 
         return (vertical * horizontal * depth)

@@ -23,9 +23,9 @@ fun main() {
         measureProvider = EmptyMeasureProvider(),
         screenWidth = 800,
         screenHeight = 400,
-        xShift = 300.0,
-        yShift = 600.0,
-        zShift = 300.0,
+        xShift = .0,
+        yShift = .0,
+        zShift = .0,
         distanceToScreen = 1000.0
     )
 
@@ -86,17 +86,17 @@ fun main() {
 
             if (screenY > lastKnownScreenY) {
                 lastKnownAngle = Angle(
-                    vertical = lastKnownAngle.vertical + 5,
+                    vertical = lastKnownAngle.vertical,
                     horizontal = lastKnownAngle.horizontal,
-                    depth = lastKnownAngle.depth
+                    depth = lastKnownAngle.depth + 5
                 )
                 pointChanged = true
             }
-            if (screenY < lastKnownScreenX) {
+            if (screenY < lastKnownScreenY) {
                 lastKnownAngle = Angle(
-                    vertical = lastKnownAngle.vertical - 5,
+                    vertical = lastKnownAngle.vertical,
                     horizontal = lastKnownAngle.horizontal,
-                    depth = lastKnownAngle.depth
+                    depth = lastKnownAngle.depth - 5
                 )
                 pointChanged = true
             }
