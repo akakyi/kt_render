@@ -177,7 +177,7 @@ class PolygonsRenderer(
 //    private fun getCameraPositionDistortion(triangle: Triangle3D) = triangle
 
     //Я сам не совсем понимаю, что конкретно я тут делаю. Нужно будет на бумаге расписать, ибо проекция понятна
-    //вращение не оч понятно
+    //вращение не оч понятно, сдвиг аналогично. Матрицы, сложна
     private fun prepareRotationMatrix(
         angleVertical: Int,
         angleHorizontal: Int,
@@ -206,6 +206,8 @@ class PolygonsRenderer(
             arrayOf( .0, .0,             .0,             1.0)
         )
 
+//        val centrShift = prepareShiftMatrix(-xShift, -yShift, -zShift)
+//        val backShift = prepareShiftMatrix(xShift, yShift, zShift)
         return (vertical * horizontal * depth)
             .also {
                 logsProvider.debug("Rotation matrix:")
@@ -213,17 +215,28 @@ class PolygonsRenderer(
             }
     }
 
+    private fun prepareShiftMatrix(
+        xShift: Double,
+        yShift: Double,
+        zShift: Double
+    ) = arrayOf(
+        arrayOf(1.0, .0, .0, xShift),
+        arrayOf(.0, 1.0, .0, yShift),
+        arrayOf(.0, .0, 1.0, zShift),
+        arrayOf(.0, .0, .0, 1.0)
+    )
+
     private fun preparePerspectivePointMatrix(vertex: Point3D) = arrayOf(
         arrayOf(vertex.x),
         arrayOf(vertex.y),
         arrayOf(vertex.z),
-        arrayOf(     1.0)
+        arrayOf(1.0)
     )
 
     private fun preparePerspectiveCoeffMatrix(vertex: Point3D, cameraVector: ThreeVector) = arrayOf(
-        arrayOf(1.0, 0.0, 0.0,                                            0.0),
-        arrayOf(0.0, 1.0, 0.0,                                            0.0),
-        arrayOf(0.0, 0.0, 1.0,                                            0.0),
+        arrayOf(1.0, 0.0, 0.0, 0.0),
+        arrayOf(0.0, 1.0, 0.0, 0.0),
+        arrayOf(0.0, 0.0, 1.0, 0.0),
         arrayOf(0.0, 0.0, 0.0, (cameraVector.z - vertex.z) / distanceToScreen)
     )
 

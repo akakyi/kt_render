@@ -23,9 +23,9 @@ fun main() {
         measureProvider = EmptyMeasureProvider(),
         screenWidth = 800,
         screenHeight = 400,
-        xShift = .0,
-        yShift = .0,
-        zShift = .0,
+        xShift = 300.0,
+        yShift = 600.0,
+        zShift = 300.0,
         distanceToScreen = 1000.0
     )
 
