@@ -178,6 +178,7 @@ class PolygonsRenderer(
 
     //Я сам не совсем понимаю, что конкретно я тут делаю. Нужно будет на бумаге расписать, ибо проекция понятна
     //вращение не оч понятно, сдвиг аналогично. Матрицы, сложна
+    //TODO Вращает вокруг хз чего
     private fun prepareRotationMatrix(
         angleVertical: Int,
         angleHorizontal: Int,

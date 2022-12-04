@@ -1,6 +1,14 @@
 package reader.obj
 
-val LINES = arrayOf(
+val FREEMAN_LINES = arrayOf<String>(
+
+)
+
+val AK_74_M_LINES = arrayOf<String>(
+
+)
+
+val AFRICAN_MAN_LINES = arrayOf(
     "v -0.000581696 -0.734665 -0.623267",
     "v 0.000283538 -1 0.286843",
     "v -0.117277 -0.973564 0.306907",
