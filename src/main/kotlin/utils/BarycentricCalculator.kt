@@ -46,6 +46,7 @@ object BarycentricCalculator {
             first = (y0 - y2) * (x1 - x2) - (x0 - x2) * (y1 - y2),
             second = (y1 - y0) * (x2 - x0) - (x1 - x0) * (y2 - y0),
             third = (y2 - y1) * (x0 - x1) - (x2 - x1) * (y0 - y1)
+        )
     }
 
 }
