@@ -4,6 +4,7 @@ import dto.*
 import utils.BarycentricCalculator
 import utils.LogsProvider
 import utils.MeasureProvider
+import utils.dto.TriangleBarycentricDenominators
 import utils.times
 import kotlin.math.*
 
@@ -78,17 +79,19 @@ class PolygonsRenderer(
         logsProvider.debug("Will draw, colored with $color")
 
         val focusArea = calcFocusArea(distortedTriangle)
-        val leftBordX = focusArea.leftTop.x
-        val rightBordX = focusArea.rightBottom.x
-        val bottomBordY = focusArea.leftTop.y
-        val topBordY = focusArea.rightBottom.y
+        val leftBordX = focusArea.leftTop.x.let { max(it, 0) }
+        val rightBordX = focusArea.rightBottom.x.let { min(it, screenWidth) }
+        val bottomBordY = focusArea.leftTop.y.let { max(it, 0) }
+        val topBordY = focusArea.rightBottom.y.let { min(it, screenHeight) }
 
         val startMillisPainting = measureProvider.currentMillis()
+        val lambdaDenominators = BarycentricCalculator.calcLambdaDenominators(distortedTriangle.proection2D)
         for (i in leftBordX..rightBordX) {
             for (j in bottomBordY..topBordY) {
                 paintPixelInTriangle(
                     pointCol = ScreenPointColored(i, j, color),
                     basis = distortedTriangle,
+                    triangleBarycentricDenominators = lambdaDenominators,
                     zBuffer = zBuffer
                 )
             }
@@ -103,16 +106,18 @@ class PolygonsRenderer(
     private fun paintPixelInTriangle(
         pointCol: ScreenPointColored,
         basis: Triangle3D,
+        triangleBarycentricDenominators: TriangleBarycentricDenominators,
         zBuffer: Array<Array<Double>>
     ) {
         val screenPoint = pointCol.point
-        if (screenPoint.x < 0 || screenPoint.x >= screenWidth || screenPoint.y < 0 || screenPoint.y >= screenHeight) {
-            return
-        }
 
         val startMillis = measureProvider.currentMillis()
 
-        val barycentric = BarycentricCalculator.calcTriangleBarycentric(basis.proection2D, screenPoint)
+        val barycentric = BarycentricCalculator.calcTriangleBarycentric(
+            basis = basis.proection2D,
+            point = screenPoint,
+            preCalcLambdaDenominators = triangleBarycentricDenominators
+        )
         if (barycentric.lambdaFirst < 0 || barycentric.lambdaSecond < 0 || barycentric.lambdaThird < 0) {
             return
         }
